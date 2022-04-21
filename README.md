@@ -4,9 +4,11 @@ This is a sample repository to demonstrate how to use the OIDC token provided by
 
 ## Setting up an OpenID Connect identity provider (IdP) on AWS
 
-Please follow the instructions on the following page:
+Please follow the instructions on the following pages:
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
+
+https://circleci.com/docs/2.0/openid-connect-tokens/
 
 ### IdP Values
 
