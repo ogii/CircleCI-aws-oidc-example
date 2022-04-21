@@ -1,0 +1,49 @@
+version: 2.1
+
+parameters:
+  custom-text:
+    type: string
+    default: "SampleText"
+
+commands:
+  install-awscli: # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    steps:
+      - run:
+          name: Install awscli
+          working_directory: /tmp/awscli
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            echo 'export AWS_PAGER=""' | tee -a $BASH_ENV
+jobs:
+  deploy-to-s3:
+    docker:
+      - image: cimg/base:stable
+    environment:
+      AWS_DEFAULT_REGION: us-east-1
+    steps:
+      - checkout
+      - install-awscli
+      - run:
+          name: update index.html
+          command: |
+            now=$(date -R)
+            sed -i "s/DEPLOYED_FROM/$CIRCLE_BRANCH/g" index.html
+            sed -i "s/DEPLOYED_TIME/$now/g" index.html
+            sed -i "s/CUSTOM_TEXT/<< pipeline.parameters.custom-text >>/g" index.html
+      - run:
+          name: deploy to s3
+          command: |
+              # first, create a temporary file and set AWS_WEB_IDENTITY_TOKEN_FILE to that file
+              export AWS_WEB_IDENTITY_TOKEN_FILE="$(mktemp -u)"
+              # then, put the OIDC token into that file
+              echo $CIRCLE_OIDC_TOKEN > "$AWS_WEB_IDENTITY_TOKEN_FILE"
+              aws sts get-caller-identity
+              aws s3 cp ./index.html $S3_TARGET
+              
+workflows:
+  build-and-deploy:
+    jobs:
+      - deploy-to-s3:
+          context: aws-oidc
